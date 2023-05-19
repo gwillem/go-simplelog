@@ -37,6 +37,10 @@ func init() {
 	// color.NoColor = false // Override terminal detection
 }
 
+func Debug(arg ...interface{}) {
+	print(Dark("   "), arg...)
+}
+
 func Task(arg ...interface{}) {
 	print(Yellow(">>>"), arg...)
 }
