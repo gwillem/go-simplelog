@@ -66,6 +66,12 @@ func Fatal(arg ...interface{}) {
 	os.Exit(1)
 }
 
+func Check(e error) {
+	if e != nil {
+		Fatal(e.Error())
+	}
+}
+
 func Error(e error) {
 	Fatal("Fatal error:", e.Error())
 }
