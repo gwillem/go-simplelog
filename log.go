@@ -21,7 +21,6 @@ var (
 )
 
 func Silence(new bool) bool {
-
 	prev := channel == io.Discard
 
 	if new {
@@ -66,8 +65,11 @@ func Fatal(arg ...interface{}) {
 	os.Exit(1)
 }
 
-func Check(e error) {
+func Check(e error, msg ...interface{}) {
 	if e != nil {
+		if len(msg) > 0 {
+			print("ERR", msg...)
+		}
 		Fatal(e.Error())
 	}
 }
