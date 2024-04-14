@@ -4,8 +4,19 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 
 	"github.com/fatih/color"
+)
+
+type Level int
+
+const (
+	LevelDebug Level = iota
+	LevelTask
+	LevelWarn
+	LevelAlert
+	LevelError
 )
 
 var (
@@ -17,7 +28,10 @@ var (
 	Dark       = color.New(color.FgHiBlack).SprintFunc()
 	BoldWhite  = color.New(color.FgHiWhite, color.Bold).SprintFunc()
 
-	channel io.Writer = os.Stderr
+	channel  io.Writer = os.Stderr
+	logLevel           = LevelDebug
+
+	writeLock sync.Mutex
 )
 
 func Silence(new bool) bool {
@@ -32,43 +46,59 @@ func Silence(new bool) bool {
 	return prev
 }
 
+func SetLevel(l Level) {
+	logLevel = l
+}
+
 func init() {
 	// color.NoColor = false // Override terminal detection
 }
 
 func Debug(arg ...interface{}) {
-	print(Dark("   "), arg...)
+	if logLevel <= LevelDebug {
+		_print(Dark("   "), arg...)
+	}
 }
 
 func Task(arg ...interface{}) {
-	print(Yellow(">>>"), arg...)
+	if logLevel <= LevelTask {
+		_print(Yellow(">>>"), arg...)
+	}
 }
 
 func Warn(arg ...interface{}) {
-	print(Red("!!!"), arg...)
+	if logLevel <= LevelWarn {
+		_print(Red("!!!"), arg...)
+	}
 }
 
 func Alert(arg ...interface{}) {
-	print(Purple(" ! "), arg...)
+	if logLevel <= LevelAlert {
+		_print(Purple(" ! "), arg...)
+	}
 }
 
 func Ok(arg ...interface{}) {
-	print(Green(" ✔ "), arg...)
+	if logLevel <= LevelTask {
+		_print(Green(" ✔ "), arg...)
+	}
 }
 
 func Progress(arg ...interface{}) {
-	print(" - ", arg...)
+	if logLevel <= LevelTask {
+		_print(" - ", arg...)
+	}
 }
 
 func Fatal(arg ...interface{}) {
-	print(WhiteOnRed("XXX"), arg...)
+	_print(WhiteOnRed("XXX"), arg...)
 	os.Exit(1)
 }
 
 func Check(e error, msg ...interface{}) {
 	if e != nil {
 		if len(msg) > 0 {
-			print("ERR", msg...)
+			_print("ERR", msg...)
 		}
 		Fatal(e.Error())
 	}
@@ -78,7 +108,9 @@ func Error(e error) {
 	Fatal("Fatal error:", e.Error())
 }
 
-func print(prefix string, arg ...interface{}) {
-	fmt.Fprint(channel, prefix+" ")
-	fmt.Fprintln(channel, arg...)
+func _print(prefix string, arg ...interface{}) {
+	writeLock.Lock()
+	defer writeLock.Unlock()
+
+	fmt.Fprintf(channel, "%s %s", prefix, fmt.Sprintln(arg...))
 }
