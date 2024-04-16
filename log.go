@@ -9,7 +9,13 @@ import (
 	"github.com/fatih/color"
 )
 
-type Level int
+type (
+	Level             int
+	prefixerInterface interface {
+		Prefix() string
+	}
+	defaultPrefixer struct{}
+)
 
 const (
 	LevelDebug Level = iota
@@ -32,7 +38,16 @@ var (
 	logLevel           = LevelDebug
 
 	writeLock sync.Mutex
+	prefixer  prefixerInterface = defaultPrefixer{}
 )
+
+func (p defaultPrefixer) Prefix() string {
+	return ""
+}
+
+func SetPrefixer(p prefixerInterface) {
+	prefixer = p
+}
 
 func Silence(new bool) bool {
 	prev := channel == io.Discard
@@ -112,5 +127,5 @@ func _print(prefix string, arg ...interface{}) {
 	writeLock.Lock()
 	defer writeLock.Unlock()
 
-	fmt.Fprintf(channel, "%s %s", prefix, fmt.Sprintln(arg...))
+	fmt.Fprintf(channel, "%s %s %s", prefixer.Prefix(), prefix, fmt.Sprintln(arg...))
 }
