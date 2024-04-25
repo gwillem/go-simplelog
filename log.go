@@ -110,6 +110,10 @@ func Fatal(arg ...interface{}) {
 	os.Exit(1)
 }
 
+func Fatalf(format string, arg ...interface{}) {
+	Fatal(fmt.Sprintf(format, arg...))
+}
+
 func Check(e error, msg ...interface{}) {
 	if e != nil {
 		if len(msg) > 0 {
@@ -121,6 +125,10 @@ func Check(e error, msg ...interface{}) {
 
 func Error(e error) {
 	Fatal("Fatal error:", e.Error())
+}
+
+func Errorf(format string, arg ...interface{}) {
+	Fatal(fmt.Errorf(format, arg...))
 }
 
 func _print(prefix string, arg ...interface{}) {
