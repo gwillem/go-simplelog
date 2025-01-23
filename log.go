@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
+	"strings"
 	"sync"
 
 	"github.com/fatih/color"
@@ -123,6 +125,14 @@ func Check(e error, msg ...interface{}) {
 	}
 }
 
+func Must[T any](v T, err error) T {
+	if err != nil {
+		_, file, line, _ := runtime.Caller(1)
+		Fatal(fmt.Sprintf("%s:%d: %v", lastTwoSegments(file), line, err))
+	}
+	return v
+}
+
 func Error(e error) {
 	Fatal("Fatal error:", e.Error())
 }
@@ -136,4 +146,12 @@ func _print(prefix string, arg ...interface{}) {
 	defer writeLock.Unlock()
 
 	fmt.Fprintf(channel, "%s %s %s", prefixer.Prefix(), prefix, fmt.Sprintln(arg...))
+}
+
+func lastTwoSegments(path string) string {
+	parts := strings.Split(path, "/")
+	if len(parts) < 2 {
+		return path
+	}
+	return strings.Join(parts[len(parts)-2:], "/")
 }
