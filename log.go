@@ -15,6 +15,14 @@ type (
 	Level             int
 	prefixerInterface interface {
 		Prefix() string
+		PrefixDebug() string
+		PrefixTask() string
+		PrefixWarn() string
+		PrefixAlert() string
+		PrefixOk() string
+		PrefixProgress() string
+		PrefixFatal() string
+		PrefixError() string
 	}
 	defaultPrefixer struct{}
 )
@@ -47,6 +55,38 @@ func (p defaultPrefixer) Prefix() string {
 	return ""
 }
 
+func (p defaultPrefixer) PrefixDebug() string {
+	return Dark("   ")
+}
+
+func (p defaultPrefixer) PrefixTask() string {
+	return Yellow(">>>")
+}
+
+func (p defaultPrefixer) PrefixWarn() string {
+	return Red("!!!")
+}
+
+func (p defaultPrefixer) PrefixAlert() string {
+	return Purple(" ! ")
+}
+
+func (p defaultPrefixer) PrefixOk() string {
+	return Green(" ✔ ")
+}
+
+func (p defaultPrefixer) PrefixProgress() string {
+	return " - "
+}
+
+func (p defaultPrefixer) PrefixFatal() string {
+	return WhiteOnRed("XXX")
+}
+
+func (p defaultPrefixer) PrefixError() string {
+	return Red("ERR")
+}
+
 func SetPrefixer(p prefixerInterface) {
 	prefixer = p
 }
@@ -63,63 +103,112 @@ func Silence(new bool) bool {
 	return prev
 }
 
+func IsSilenced() bool {
+	return channel == io.Discard
+}
+
 func SetLevel(l Level) {
 	logLevel = l
 }
 
-func init() {
-	// color.NoColor = false // Override terminal detection
+func GetLevel() Level {
+	return logLevel
 }
 
-func Debug(arg ...interface{}) {
+func Debug(arg ...any) {
 	if logLevel <= LevelDebug {
-		_print(Dark("   "), arg...)
+		_print(prefixer.PrefixDebug(), arg...)
 	}
 }
 
-func Task(arg ...interface{}) {
+func Debugf(format string, arg ...any) {
+	if logLevel <= LevelDebug {
+		_print(prefixer.PrefixDebug(), fmt.Sprintf(format, arg...))
+	}
+}
+
+func Task(arg ...any) {
 	if logLevel <= LevelTask {
-		_print(Yellow(">>>"), arg...)
+		_print(prefixer.PrefixTask(), arg...)
 	}
 }
 
-func Warn(arg ...interface{}) {
+func Taskf(format string, arg ...any) {
+	if logLevel <= LevelTask {
+		_print(prefixer.PrefixTask(), fmt.Sprintf(format, arg...))
+	}
+}
+
+func Warn(arg ...any) {
 	if logLevel <= LevelWarn {
-		_print(Red("!!!"), arg...)
+		_print(prefixer.PrefixWarn(), arg...)
 	}
 }
 
-func Alert(arg ...interface{}) {
+func Warnf(format string, arg ...any) {
+	if logLevel <= LevelWarn {
+		_print(prefixer.PrefixWarn(), fmt.Sprintf(format, arg...))
+	}
+}
+
+func Alert(arg ...any) {
 	if logLevel <= LevelAlert {
-		_print(Purple(" ! "), arg...)
+		_print(prefixer.PrefixAlert(), arg...)
 	}
 }
 
-func Ok(arg ...interface{}) {
+func Alertf(format string, arg ...any) {
+	if logLevel <= LevelAlert {
+		_print(prefixer.PrefixAlert(), fmt.Sprintf(format, arg...))
+	}
+}
+
+func Ok(arg ...any) {
 	if logLevel <= LevelTask {
-		_print(Green(" ✔ "), arg...)
+		_print(prefixer.PrefixOk(), arg...)
 	}
 }
 
-func Progress(arg ...interface{}) {
+func Okf(format string, arg ...any) {
 	if logLevel <= LevelTask {
-		_print(" - ", arg...)
+		_print(prefixer.PrefixOk(), fmt.Sprintf(format, arg...))
 	}
 }
 
-func Fatal(arg ...interface{}) {
-	_print(WhiteOnRed("XXX"), arg...)
+func Progress(arg ...any) {
+	if logLevel <= LevelTask {
+		_print(prefixer.PrefixProgress(), arg...)
+	}
+}
+
+func Progressf(format string, arg ...any) {
+	if logLevel <= LevelTask {
+		_print(prefixer.PrefixProgress(), fmt.Sprintf(format, arg...))
+	}
+}
+
+func Fatal(arg ...any) {
+	_print(prefixer.PrefixFatal(), arg...)
 	os.Exit(1)
 }
 
-func Fatalf(format string, arg ...interface{}) {
+func Fatalf(format string, arg ...any) {
 	Fatal(fmt.Sprintf(format, arg...))
 }
 
-func Check(e error, msg ...interface{}) {
+func Check(e error, msg ...any) {
 	if e != nil {
 		if len(msg) > 0 {
-			_print("ERR", msg...)
+			_print(prefixer.PrefixError(), msg...)
+		}
+		Fatal(e.Error())
+	}
+}
+
+func Checkf(e error, format string, arg ...any) {
+	if e != nil {
+		if len(arg) > 0 {
+			_print(prefixer.PrefixError(), fmt.Sprintf(format, arg...))
 		}
 		Fatal(e.Error())
 	}
@@ -137,11 +226,11 @@ func Error(e error) {
 	Fatal("Fatal error:", e.Error())
 }
 
-func Errorf(format string, arg ...interface{}) {
+func Errorf(format string, arg ...any) {
 	Fatal(fmt.Errorf(format, arg...))
 }
 
-func _print(prefix string, arg ...interface{}) {
+func _print(prefix string, arg ...any) {
 	writeLock.Lock()
 	defer writeLock.Unlock()
 
